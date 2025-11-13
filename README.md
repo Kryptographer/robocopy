@@ -225,4 +225,4 @@ Contributions are welcome! Feel free to:
 
 ---
 
-**Made with ⚡ - Modern GUI for Robocopy**
+**Made with ⚡ **
