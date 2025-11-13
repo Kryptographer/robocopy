@@ -9,10 +9,10 @@ let scheduledTasks = new Map(); // Store scheduled tasks
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 500,
+    width: 1400,
+    height: 900,
+    minWidth: 1000,
+    minHeight: 700,
     backgroundColor: '#0a0a0a',
     frame: true,
     titleBarStyle: 'hidden',
