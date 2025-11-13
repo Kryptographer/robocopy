@@ -1,10 +1,10 @@
 /* ===================================
-   ROBOCOPY GUI - Teenage Engineering × Tesla Theme
-   Dark Mode Design System
+   ROBOCOPY GUI - Modern Dark/Light Theme
+   Design System
    =================================== */
 
 :root {
-  /* Colors - Tesla/TE Inspired */
+  /* Colors - Modern Design */
   --bg-primary: #0a0a0a;
   --bg-secondary: #141414;
   --bg-tertiary: #1a1a1a;
@@ -184,12 +184,16 @@ body {
 
 .panel-left {
   width: 480px;
+  min-width: 400px;
+  max-width: 600px;
   flex-shrink: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .panel-right {
   flex: 1;
+  min-width: 400px;
   overflow: hidden;
 }
 
@@ -830,16 +834,100 @@ body {
    RESPONSIVE ADJUSTMENTS
    =================================== */
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .panel-left {
-    width: 400px;
+    width: 420px;
+    min-width: 380px;
   }
 
   .checkbox-grid {
     grid-template-columns: 1fr;
   }
 
+  .input-group-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .panel-left {
+    width: 380px;
+    min-width: 350px;
+  }
+
   .output-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 900px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .panel-left, .panel-right {
+    width: 100% !important;
+    min-width: unset;
+    max-width: unset;
+    border-right: none;
+  }
+
+  .panel-left {
+    max-height: 50vh;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .panel-right {
+    flex: 1;
+    min-height: 400px;
+  }
+
+  .input-group-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .titlebar {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .titlebar-drag {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .titlebar-actions {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .section {
+    padding: var(--spacing-md);
+  }
+
+  .panel-header {
+    padding: var(--spacing-md);
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+  }
+
+  .schedule-actions {
+    flex-direction: column;
   }
 }

@@ -667,4 +667,4 @@ function updateProgress(percent) {
 // ===================================
 
 console.log('🚀 Robocopy GUI initialized');
-console.log('💾 Teenage Engineering × Tesla Design');
+console.log('💾 Modern Design System');

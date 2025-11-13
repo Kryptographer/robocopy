@@ -1,9 +1,9 @@
 # ⚡ Robocopy GUI
 
 > **Ultimate Robocopy GUI built with Electron**
-> *Teenage Engineering × Tesla Design Aesthetic*
+> *Modern Dark Mode Design*
 
-A modern, dark-mode GUI for Windows Robocopy with a sleek interface inspired by Teenage Engineering's minimalist design and Tesla's futuristic aesthetic.
+A modern, dark-mode GUI for Windows Robocopy with a sleek, minimalist interface and futuristic aesthetic.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)
 ![Electron](https://img.shields.io/badge/electron-27.0.0-47848F)
@@ -12,7 +12,7 @@ A modern, dark-mode GUI for Windows Robocopy with a sleek interface inspired by 
 ## ✨ Features
 
 ### Core Functionality
-- **🎨 Beautiful Dark/Light UI** - Toggle between dark and light themes with Teenage Engineering and Tesla design
+- **🎨 Beautiful Dark/Light UI** - Toggle between dark and light themes with modern minimalist design
 - **📁 Easy File Selection** - Browse or drag-and-drop folders for source/destination
 - **⚙️ Full Robocopy Options** - Access all major robocopy switches and parameters
 - **📊 Real-time Output** - Live progress monitoring with styled terminal output
@@ -123,15 +123,12 @@ npm run build
 
 ## 🎨 Design Philosophy
 
-This application combines two iconic design aesthetics:
+This application features a modern, minimalist design aesthetic:
 
-### Teenage Engineering Influence
 - **Minimalist** - Clean, functional interface with no unnecessary elements
 - **Typography** - Monospace fonts for technical precision
-- **Color Palette** - Muted colors with strategic accent usage
+- **Color Palette** - Muted colors with strategic orange accent usage
 - **Layout** - Grid-based, organized sections with clear hierarchy
-
-### Tesla Influence
 - **Dark Mode** - Deep black backgrounds with subtle gradients
 - **Modern Controls** - Smooth animations and transitions
 - **Information Density** - Maximum utility in minimal space
@@ -145,7 +142,7 @@ robocopy-gui/
 ├── preload.js        # Secure IPC bridge
 ├── renderer.js       # Renderer process (UI logic)
 ├── index.html        # Application structure
-├── styles.css        # Teenage Engineering × Tesla theme
+├── styles.css        # Modern dark/light theme styles
 └── package.json      # Project configuration
 ```
 
@@ -228,4 +225,4 @@ Contributions are welcome! Feel free to:
 
 ---
 
-**Made with ⚡ by combining the best of Teenage Engineering and Tesla design**
+**Made with ⚡ - Modern GUI for Robocopy**
