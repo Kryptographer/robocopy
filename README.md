@@ -189,4 +189,4 @@ Contributions are welcome! Feel free to:
 
 ---
 
-**Made with ⚡ by combining the best of Teenage Engineering and Tesla design**
+**Made with **
