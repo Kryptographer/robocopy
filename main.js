@@ -1,15 +1,18 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs').promises;
+const fsSync = require('fs');
 
 let mainWindow;
+let scheduledTasks = new Map(); // Store scheduled tasks
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    minWidth: 800,
+    minHeight: 500,
     backgroundColor: '#0a0a0a',
     frame: true,
     titleBarStyle: 'hidden',
@@ -180,3 +183,174 @@ function getExitCodeMessage(code) {
 
   return messages[code] || `Process exited with code ${code}`;
 }
+
+// ===================================
+// PRESET MANAGEMENT
+// ===================================
+
+ipcMain.handle('save-preset', async (event, preset) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Preset',
+    defaultPath: 'robocopy-preset.json',
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  });
+
+  if (!result.canceled && result.filePath) {
+    try {
+      await fs.writeFile(result.filePath, JSON.stringify(preset, null, 2));
+      return { success: true, path: result.filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
+ipcMain.handle('load-preset', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Load Preset',
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+    properties: ['openFile']
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    try {
+      const data = await fs.readFile(result.filePaths[0], 'utf8');
+      const preset = JSON.parse(data);
+      return { success: true, preset };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
+// ===================================
+// LOG EXPORT
+// ===================================
+
+ipcMain.handle('export-log', async (event, logContent) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Log',
+    defaultPath: `robocopy-log-${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.txt`,
+    filters: [{ name: 'Text Files', extensions: ['txt'] }, { name: 'All Files', extensions: ['*'] }]
+  });
+
+  if (!result.canceled && result.filePath) {
+    try {
+      await fs.writeFile(result.filePath, logContent);
+      return { success: true, path: result.filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
+// ===================================
+// SCHEDULED TASKS
+// ===================================
+
+// Load tasks from storage
+async function loadScheduledTasks() {
+  const tasksPath = path.join(app.getPath('userData'), 'scheduled-tasks.json');
+  try {
+    if (fsSync.existsSync(tasksPath)) {
+      const data = await fs.readFile(tasksPath, 'utf8');
+      const tasks = JSON.parse(data);
+      return tasks;
+    }
+  } catch (error) {
+    console.error('Failed to load scheduled tasks:', error);
+  }
+  return [];
+}
+
+// Save tasks to storage
+async function saveScheduledTasks(tasks) {
+  const tasksPath = path.join(app.getPath('userData'), 'scheduled-tasks.json');
+  try {
+    await fs.writeFile(tasksPath, JSON.stringify(tasks, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Failed to save scheduled tasks:', error);
+    return false;
+  }
+}
+
+ipcMain.handle('add-scheduled-task', async (event, task) => {
+  try {
+    const tasks = await loadScheduledTasks();
+    const newTask = {
+      id: Date.now().toString(),
+      ...task,
+      createdAt: new Date().toISOString(),
+      status: 'active'
+    };
+    tasks.push(newTask);
+    await saveScheduledTasks(tasks);
+    return { success: true, task: newTask };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-scheduled-tasks', async () => {
+  try {
+    const tasks = await loadScheduledTasks();
+    return { success: true, tasks };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('delete-scheduled-task', async (event, taskId) => {
+  try {
+    let tasks = await loadScheduledTasks();
+    tasks = tasks.filter(t => t.id !== taskId);
+    await saveScheduledTasks(tasks);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('toggle-task-status', async (event, taskId) => {
+  try {
+    const tasks = await loadScheduledTasks();
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      task.status = task.status === 'active' ? 'paused' : 'active';
+      await saveScheduledTasks(tasks);
+      return { success: true, task };
+    }
+    return { success: false, error: 'Task not found' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// ===================================
+// PATH VALIDATION
+// ===================================
+
+ipcMain.handle('validate-path', async (event, pathToValidate) => {
+  try {
+    // Check if path exists (works for both local and network paths)
+    const stats = await fs.stat(pathToValidate);
+    return {
+      success: true,
+      exists: true,
+      isDirectory: stats.isDirectory(),
+      isNetworkPath: pathToValidate.startsWith('\\\\') || pathToValidate.startsWith('//')
+    };
+  } catch (error) {
+    // Path doesn't exist or is inaccessible
+    return {
+      success: true,
+      exists: false,
+      isNetworkPath: pathToValidate.startsWith('\\\\') || pathToValidate.startsWith('//'),
+      error: error.message
+    };
+  }
+});

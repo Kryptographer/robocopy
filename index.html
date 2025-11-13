@@ -14,6 +14,11 @@
       <div class="app-icon">⚡</div>
       <div class="app-title">ROBOCOPY</div>
     </div>
+    <div class="titlebar-actions">
+      <button class="btn btn-icon-only" id="themeToggle" title="Toggle Theme">
+        <span id="themeIcon">☀️</span>
+      </button>
+    </div>
   </div>
 
   <!-- Main Container -->
@@ -22,9 +27,19 @@
     <div class="panel panel-left">
       <div class="panel-header">
         <h2>CONFIGURATION</h2>
-        <div class="status-indicator" id="statusIndicator">
-          <div class="status-dot"></div>
-          <span>READY</span>
+        <div class="header-actions">
+          <button class="btn btn-small" id="loadPreset" title="Load Preset">
+            <span class="btn-icon">📥</span>
+            LOAD
+          </button>
+          <button class="btn btn-small" id="savePreset" title="Save Preset">
+            <span class="btn-icon">💾</span>
+            SAVE
+          </button>
+          <div class="status-indicator" id="statusIndicator">
+            <div class="status-dot"></div>
+            <span>READY</span>
+          </div>
         </div>
       </div>
 
@@ -34,8 +49,8 @@
 
         <div class="input-group">
           <label>SOURCE</label>
-          <div class="path-input-wrapper">
-            <input type="text" id="sourcePath" class="path-input" placeholder="Select source directory..." readonly>
+          <div class="path-input-wrapper drop-zone" id="sourceDropZone" data-path-type="source">
+            <input type="text" id="sourcePath" class="path-input" placeholder="Type, select, or drag folder here...">
             <button class="btn btn-browse" id="browseSource">
               <span class="btn-icon">📁</span>
               BROWSE
@@ -45,8 +60,8 @@
 
         <div class="input-group">
           <label>DESTINATION</label>
-          <div class="path-input-wrapper">
-            <input type="text" id="destPath" class="path-input" placeholder="Select destination directory..." readonly>
+          <div class="path-input-wrapper drop-zone" id="destDropZone" data-path-type="destination">
+            <input type="text" id="destPath" class="path-input" placeholder="Type, select, or drag folder here...">
             <button class="btn btn-browse" id="browseDest">
               <span class="btn-icon">📁</span>
               BROWSE
@@ -158,6 +173,35 @@
         </div>
       </div>
 
+      <!-- Scheduling -->
+      <div class="section">
+        <div class="section-title">SCHEDULING</div>
+
+        <div class="input-group">
+          <label>TASK NAME</label>
+          <input type="text" id="taskName" class="text-input" placeholder="My Backup Task">
+        </div>
+
+        <div class="input-group">
+          <label>SCHEDULE (CRON FORMAT)</label>
+          <input type="text" id="cronSchedule" class="text-input" placeholder="0 2 * * * (2 AM daily)">
+          <div class="hint-text">Examples: "0 2 * * *" (2 AM daily), "0 */6 * * *" (every 6 hours)</div>
+        </div>
+
+        <div class="schedule-actions">
+          <button class="btn btn-small" id="addSchedule">
+            <span class="btn-icon">⏰</span>
+            ADD TASK
+          </button>
+          <button class="btn btn-small" id="viewSchedules">
+            <span class="btn-icon">📋</span>
+            VIEW TASKS
+          </button>
+        </div>
+
+        <div id="scheduledTasksList" class="scheduled-tasks-list"></div>
+      </div>
+
       <!-- Action Buttons -->
       <div class="action-buttons">
         <button class="btn btn-primary" id="startBtn">
@@ -175,14 +219,28 @@
     <div class="panel panel-right">
       <div class="panel-header">
         <h2>OUTPUT</h2>
-        <button class="btn btn-small" id="clearOutput">CLEAR</button>
+        <div class="header-actions">
+          <button class="btn btn-small" id="exportLog" title="Export Log">
+            <span class="btn-icon">📄</span>
+            EXPORT
+          </button>
+          <button class="btn btn-small" id="clearOutput">CLEAR</button>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Ready to start...</div>
       </div>
 
       <div class="output-container">
         <div class="output-terminal" id="outputTerminal">
           <div class="terminal-welcome">
             <div class="terminal-logo">⚡ ROBOCOPY GUI</div>
-            <div class="terminal-subtitle">Teenage Engineering × Tesla Design</div>
+            <div class="terminal-subtitle">Modern Design</div>
             <div class="terminal-hint">Configure options and press START COPY to begin...</div>
           </div>
         </div>
@@ -196,6 +254,10 @@
         <div class="stat-item">
           <div class="stat-label">EXIT CODE</div>
           <div class="stat-value" id="statExitCode">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">PROGRESS</div>
+          <div class="stat-value" id="statProgress">0%</div>
         </div>
         <div class="stat-item">
           <div class="stat-label">ELAPSED</div>

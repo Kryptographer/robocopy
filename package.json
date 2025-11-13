@@ -1,7 +1,7 @@
 {
   "name": "robocopy-gui",
   "version": "1.0.0",
-  "description": "Ultimate Robocopy GUI with Teenage Engineering meets Tesla design",
+  "description": "Ultimate Robocopy GUI with modern dark mode design",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
