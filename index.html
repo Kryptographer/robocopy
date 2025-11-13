@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Robocopy GUI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Custom Title Bar -->
+  <div class="titlebar">
+    <div class="titlebar-drag">
+      <div class="app-icon">⚡</div>
+      <div class="app-title">ROBOCOPY</div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Left Panel - Configuration -->
+    <div class="panel panel-left">
+      <div class="panel-header">
+        <h2>CONFIGURATION</h2>
+        <div class="status-indicator" id="statusIndicator">
+          <div class="status-dot"></div>
+          <span>READY</span>
+        </div>
+      </div>
+
+      <!-- Path Selection -->
+      <div class="section">
+        <div class="section-title">PATHS</div>
+
+        <div class="input-group">
+          <label>SOURCE</label>
+          <div class="path-input-wrapper">
+            <input type="text" id="sourcePath" class="path-input" placeholder="Select source directory..." readonly>
+            <button class="btn btn-browse" id="browseSource">
+              <span class="btn-icon">📁</span>
+              BROWSE
+            </button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>DESTINATION</label>
+          <div class="path-input-wrapper">
+            <input type="text" id="destPath" class="path-input" placeholder="Select destination directory..." readonly>
+            <button class="btn btn-browse" id="browseDest">
+              <span class="btn-icon">📁</span>
+              BROWSE
+            </button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>FILES (optional)</label>
+          <input type="text" id="files" class="text-input" placeholder="*.* or specific patterns">
+        </div>
+      </div>
+
+      <!-- Copy Options -->
+      <div class="section">
+        <div class="section-title">COPY OPTIONS</div>
+
+        <div class="checkbox-grid">
+          <label class="checkbox-label">
+            <input type="checkbox" id="subdirectories">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Subdirectories (/S)</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="emptySubdirs">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Empty Subdirs (/E)</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="mirrorMode">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Mirror Mode (/MIR)</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="copyAll">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Copy All (/COPYALL)</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="restartMode">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Restart Mode (/Z)</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="backupMode">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Backup Mode (/B)</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="moveFiles">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Move Files (/MOVE)</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="verbose">
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Verbose (/V)</span>
+          </label>
+        </div>
+
+        <div class="input-group-row">
+          <div class="input-group">
+            <label>LEVELS</label>
+            <input type="number" id="levels" class="text-input" placeholder="0" min="0">
+          </div>
+          <div class="input-group">
+            <label>RETRIES</label>
+            <input type="number" id="retries" class="text-input" placeholder="1000000" value="1000000" min="0">
+          </div>
+          <div class="input-group">
+            <label>WAIT (sec)</label>
+            <input type="number" id="waitTime" class="text-input" placeholder="30" value="30" min="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Options -->
+      <div class="section">
+        <div class="section-title">ADVANCED</div>
+
+        <div class="input-group">
+          <label>EXCLUDE FILES (comma-separated)</label>
+          <input type="text" id="excludeFiles" class="text-input" placeholder="*.tmp, *.log">
+        </div>
+
+        <div class="input-group">
+          <label>EXCLUDE DIRECTORIES (comma-separated)</label>
+          <input type="text" id="excludeDirs" class="text-input" placeholder="temp, cache">
+        </div>
+
+        <div class="checkbox-grid">
+          <label class="checkbox-label">
+            <input type="checkbox" id="multiThread" checked>
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Multi-threaded</span>
+          </label>
+        </div>
+
+        <div class="input-group">
+          <label>THREADS</label>
+          <input type="number" id="threads" class="text-input" placeholder="8" value="8" min="1" max="128">
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="startBtn">
+          <span class="btn-icon">▶</span>
+          START COPY
+        </button>
+        <button class="btn btn-secondary" id="clearBtn">
+          <span class="btn-icon">✕</span>
+          CLEAR
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Panel - Output -->
+    <div class="panel panel-right">
+      <div class="panel-header">
+        <h2>OUTPUT</h2>
+        <button class="btn btn-small" id="clearOutput">CLEAR</button>
+      </div>
+
+      <div class="output-container">
+        <div class="output-terminal" id="outputTerminal">
+          <div class="terminal-welcome">
+            <div class="terminal-logo">⚡ ROBOCOPY GUI</div>
+            <div class="terminal-subtitle">Teenage Engineering × Tesla Design</div>
+            <div class="terminal-hint">Configure options and press START COPY to begin...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="output-stats" id="outputStats">
+        <div class="stat-item">
+          <div class="stat-label">STATUS</div>
+          <div class="stat-value" id="statStatus">IDLE</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">EXIT CODE</div>
+          <div class="stat-value" id="statExitCode">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">ELAPSED</div>
+          <div class="stat-value" id="statElapsed">00:00:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

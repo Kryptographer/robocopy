@@ -1,0 +1,25 @@
+{
+  "name": "robocopy-gui",
+  "version": "1.0.0",
+  "description": "Ultimate Robocopy GUI with Teenage Engineering meets Tesla design",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": ["robocopy", "gui", "electron", "backup", "file-copy"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.robocopy.gui",
+    "productName": "Robocopy GUI",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    }
+  }
+}
