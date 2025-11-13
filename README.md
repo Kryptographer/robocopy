@@ -11,14 +11,24 @@ A modern, dark-mode GUI for Windows Robocopy with a sleek interface inspired by 
 
 ## ✨ Features
 
-- **🎨 Beautiful Dark UI** - Inspired by Teenage Engineering and Tesla design language
-- **📁 Easy File Selection** - Browse and select source/destination directories
+### Core Functionality
+- **🎨 Beautiful Dark/Light UI** - Toggle between dark and light themes with Teenage Engineering and Tesla design
+- **📁 Easy File Selection** - Browse or drag-and-drop folders for source/destination
 - **⚙️ Full Robocopy Options** - Access all major robocopy switches and parameters
 - **📊 Real-time Output** - Live progress monitoring with styled terminal output
-- **🎯 Smart Validation** - Input validation to prevent common mistakes
+- **🎯 Smart Validation** - Input validation to prevent common mistakes including network path detection
 - **⚡ Multi-threaded Copying** - Leverage robocopy's `/MT` for faster transfers
-- **📈 Statistics Dashboard** - Track status, exit codes, and elapsed time
+- **📈 Statistics Dashboard** - Track status, exit codes, progress percentage, and elapsed time
 - **🔒 Secure** - Built with Electron security best practices (context isolation)
+
+### Advanced Features
+- **💾 Save/Load Presets** - Save your configurations as JSON presets and load them anytime
+- **⏰ Scheduled Backups** - Create scheduled tasks with cron-style scheduling
+- **📄 Log Export** - Export terminal output to text files for record-keeping
+- **🖱️ Drag & Drop** - Drag folders directly onto source/destination fields
+- **🌓 Theme Toggle** - Switch between dark and light modes with saved preference
+- **🌐 Network Path Support** - Full support for UNC network paths (\\server\share)
+- **📊 Progress Estimation** - Visual progress bar with percentage tracking
 
 ## 🚀 Quick Start
 
@@ -49,11 +59,45 @@ npm run build
 
 ### Basic Workflow
 
-1. **Select Source** - Click "BROWSE" next to the SOURCE field
-2. **Select Destination** - Click "BROWSE" next to the DESTINATION field
+1. **Select Source** - Click "BROWSE" or drag a folder to the SOURCE field
+2. **Select Destination** - Click "BROWSE" or drag a folder to the DESTINATION field
 3. **Configure Options** - Choose copy options, exclusions, and advanced settings
 4. **Start Copy** - Click "START COPY" to execute the robocopy operation
-5. **Monitor Progress** - Watch real-time output in the terminal panel
+5. **Monitor Progress** - Watch real-time output, progress bar, and statistics
+
+### Using Advanced Features
+
+#### Presets
+- Click **SAVE** to save current configuration as a JSON preset
+- Click **LOAD** to load a previously saved preset
+- Presets include all paths, options, and advanced settings
+
+#### Scheduled Tasks
+1. Fill in **TASK NAME** (e.g., "Daily Backup")
+2. Enter **CRON SCHEDULE** (e.g., `0 2 * * *` for 2 AM daily)
+3. Click **ADD TASK** to create the scheduled task
+4. Use **VIEW TASKS** to see, pause, resume, or delete scheduled tasks
+
+**Cron Format Examples:**
+- `0 2 * * *` - Every day at 2:00 AM
+- `0 */6 * * *` - Every 6 hours
+- `0 0 * * 0` - Every Sunday at midnight
+- `30 14 1 * *` - First day of month at 2:30 PM
+
+#### Log Export
+- Click **EXPORT** button in the output panel
+- Choose location and filename for the log file
+- All terminal output will be saved as plain text
+
+#### Theme Toggle
+- Click the sun/moon icon (☀️/🌙) in the title bar
+- Theme preference is automatically saved
+- Choose between dark mode and light mode
+
+#### Drag & Drop
+- Simply drag folders from your file explorer
+- Drop onto the source or destination input fields
+- Works with local folders and network paths
 
 ### Common Robocopy Options
 
@@ -172,20 +216,15 @@ Contributions are welcome! Feel free to:
 ## 💡 Tips
 
 1. **Test First** - Try with non-critical data before production use
-2. **Use Verbose** - Enable verbose output to see detailed operation logs
-3. **Monitor Stats** - Watch the statistics panel for operation status
-4. **Save Settings** - Note your commonly used configurations
-5. **Read Exit Codes** - Understand what different exit codes mean
-
-## 🎯 Roadmap
-
-- [ ] Save/load configuration presets
-- [ ] Scheduled backup tasks
-- [ ] Log file export
-- [ ] Drag-and-drop folder selection
-- [ ] Dark/light theme toggle
-- [ ] Network path support
-- [ ] Progress percentage estimation
+2. **Use Presets** - Save your common configurations as presets for quick reuse
+3. **Schedule Backups** - Set up scheduled tasks for automated backups
+4. **Use Verbose** - Enable verbose output to see detailed operation logs
+5. **Monitor Progress** - Watch the progress bar and statistics panel
+6. **Export Logs** - Keep records of important operations by exporting logs
+7. **Network Paths** - Use UNC paths (\\server\share) for network locations
+8. **Drag & Drop** - Quickly set paths by dragging folders from file explorer
+9. **Theme Preference** - Choose your preferred theme for comfortable viewing
+10. **Read Exit Codes** - Understand what different exit codes mean
 
 ---
 
