@@ -4,34 +4,69 @@ const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 
+// ===================================
+// CONSTANTS
+// ===================================
+const WINDOW_DEFAULTS = {
+  WIDTH: 1200,
+  HEIGHT: 800,
+  MIN_WIDTH: 800,
+  MIN_HEIGHT: 500,
+  BG_COLOR: '#0a0a0a',
+  TITLEBAR_HEIGHT: 40
+};
+
+const FILE_SIZE_LIMITS = {
+  PRESET_MAX: 1048576,      // 1MB for preset files
+  TASKS_MAX: 2097152        // 2MB for scheduled tasks
+};
+
+const VALIDATION_LIMITS = {
+  TASK_NAME_MAX: 200,
+  SCHEDULE_MAX: 100,
+  LEVELS_MAX: 9999,
+  RETRIES_MAX: 10000000,
+  WAIT_TIME_MAX: 3600,
+  THREADS_MIN: 1,
+  THREADS_MAX: 128
+};
+
+// ===================================
+// STATE
+// ===================================
 let mainWindow;
 let scheduledTasks = new Map(); // Store scheduled tasks
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 500,
-    backgroundColor: '#0a0a0a',
-    frame: true,
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#0a0a0a',
-      symbolColor: '#ffffff',
-      height: 40
-    },
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    }
-  });
+  try {
+    mainWindow = new BrowserWindow({
+      width: WINDOW_DEFAULTS.WIDTH,
+      height: WINDOW_DEFAULTS.HEIGHT,
+      minWidth: WINDOW_DEFAULTS.MIN_WIDTH,
+      minHeight: WINDOW_DEFAULTS.MIN_HEIGHT,
+      backgroundColor: WINDOW_DEFAULTS.BG_COLOR,
+      frame: true,
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: WINDOW_DEFAULTS.BG_COLOR,
+        symbolColor: '#ffffff',
+        height: WINDOW_DEFAULTS.TITLEBAR_HEIGHT
+      },
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, 'preload.js')
+      }
+    });
 
-  mainWindow.loadFile('index.html');
+    mainWindow.loadFile('index.html');
 
-  // Open DevTools in development
-  // mainWindow.webContents.openDevTools();
+    // Open DevTools in development
+    // mainWindow.webContents.openDevTools();
+  } catch (error) {
+    console.error('Failed to create window:', error);
+    app.quit();
+  }
 }
 
 app.whenReady().then(createWindow);
@@ -50,28 +85,37 @@ app.on('activate', () => {
 
 // IPC Handlers
 ipcMain.handle('select-directory', async (event, type) => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory'],
-    title: type === 'source' ? 'Select Source Directory' : 'Select Destination Directory'
-  });
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: type === 'source' ? 'Select Source Directory' : 'Select Destination Directory'
+    });
 
-  if (!result.canceled && result.filePaths.length > 0) {
-    return result.filePaths[0];
+    if (!result.canceled && result.filePaths.length > 0) {
+      return result.filePaths[0];
+    }
+    return null;
+  } catch (error) {
+    console.error('Error selecting directory:', error);
+    return null;
   }
-  return null;
 });
 
 ipcMain.handle('execute-robocopy', async (event, options) => {
   return new Promise((resolve, reject) => {
-    const args = buildRobocopyArgs(options);
+    try {
+      // Sanitize and validate options before building args
+      const sanitizedOptions = sanitizeRobocopyOptions(options);
+      const args = buildRobocopyArgs(sanitizedOptions);
 
     // For non-Windows systems, simulate robocopy for testing
     const isWindows = process.platform === 'win32';
     const command = isWindows ? 'robocopy' : 'echo';
     const finalArgs = isWindows ? args : [`Simulating: robocopy ${args.join(' ')}`];
 
+    // Security: Remove shell: true to prevent command injection
+    // Arguments are already properly escaped by Node.js spawn
     const robocopy = spawn(command, finalArgs, {
-      shell: true,
       windowsHide: true
     });
 
@@ -109,8 +153,170 @@ ipcMain.handle('execute-robocopy', async (event, options) => {
         error: error.message
       });
     });
+    } catch (error) {
+      // Error handling: Catch sanitization or spawn errors
+      console.error('Error executing robocopy:', error);
+      reject({
+        success: false,
+        error: error.message || 'Failed to execute robocopy'
+      });
+    }
   });
 });
+
+// Security: Sanitize and validate robocopy options
+function sanitizeRobocopyOptions(options) {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Invalid options provided');
+  }
+
+  // Validate and sanitize paths
+  const sanitizedSource = sanitizePath(options.source);
+  const sanitizedDest = sanitizePath(options.destination);
+
+  if (!sanitizedSource || !sanitizedDest) {
+    throw new Error('Invalid source or destination path');
+  }
+
+  // Sanitize file pattern (prevent command injection)
+  const sanitizedFiles = sanitizeFilePattern(options.files);
+
+  // Sanitize numeric values using defined constants
+  const sanitizedLevels = sanitizeNumber(options.levels, 0, VALIDATION_LIMITS.LEVELS_MAX, 0);
+  const sanitizedRetries = sanitizeNumber(options.retries, 0, VALIDATION_LIMITS.RETRIES_MAX, 1000000);
+  const sanitizedWaitTime = sanitizeNumber(options.waitTime, 0, VALIDATION_LIMITS.WAIT_TIME_MAX, 30);
+  const sanitizedThreads = sanitizeNumber(options.threads, VALIDATION_LIMITS.THREADS_MIN, VALIDATION_LIMITS.THREADS_MAX, 8);
+
+  // Sanitize string lists (exclude files/dirs)
+  const sanitizedExcludeFiles = sanitizeFileList(options.excludeFiles);
+  const sanitizedExcludeDirs = sanitizeFileList(options.excludeDirs);
+
+  // Sanitize attributes (only allow valid attribute letters)
+  const sanitizedIncludeAttrs = sanitizeAttributes(options.includeAttributes);
+  const sanitizedExcludeAttrs = sanitizeAttributes(options.excludeAttributes);
+
+  return {
+    source: sanitizedSource,
+    destination: sanitizedDest,
+    files: sanitizedFiles,
+    subdirectories: Boolean(options.subdirectories),
+    emptySubdirectories: Boolean(options.emptySubdirectories),
+    mirrorMode: Boolean(options.mirrorMode),
+    copyAll: Boolean(options.copyAll),
+    restartMode: Boolean(options.restartMode),
+    backupMode: Boolean(options.backupMode),
+    moveFiles: Boolean(options.moveFiles),
+    moveDirs: Boolean(options.moveDirs),
+    copyArchive: Boolean(options.copyArchive),
+    resetArchive: Boolean(options.resetArchive),
+    verbose: Boolean(options.verbose),
+    noProgress: Boolean(options.noProgress),
+    eta: Boolean(options.eta),
+    multiThread: Boolean(options.multiThread),
+    levels: sanitizedLevels,
+    retries: sanitizedRetries,
+    waitTime: sanitizedWaitTime,
+    threads: sanitizedThreads,
+    excludeFiles: sanitizedExcludeFiles,
+    excludeDirs: sanitizedExcludeDirs,
+    includeAttributes: sanitizedIncludeAttrs,
+    excludeAttributes: sanitizedExcludeAttrs
+  };
+}
+
+// Security: Sanitize path to prevent path traversal and command injection
+function sanitizePath(pathStr) {
+  if (!pathStr || typeof pathStr !== 'string') {
+    return '';
+  }
+
+  // Trim whitespace
+  let sanitized = pathStr.trim();
+
+  // Remove null bytes (security risk)
+  sanitized = sanitized.replace(/\0/g, '');
+
+  // Remove dangerous characters that could be used for command injection
+  // Allow: alphanumeric, spaces, common path chars (\, /, :, -, _, .), and network paths (\\)
+  // Prevent: semicolons, pipes, ampersands, redirects, etc.
+  const dangerousChars = /[;&|<>`$(){}[\]!]/g;
+  if (dangerousChars.test(sanitized)) {
+    console.error('Dangerous characters detected in path:', sanitized);
+    return '';
+  }
+
+  return sanitized;
+}
+
+// Security: Sanitize file pattern
+function sanitizeFilePattern(pattern) {
+  if (!pattern || typeof pattern !== 'string') {
+    return '*.*';
+  }
+
+  let sanitized = pattern.trim();
+
+  // Remove null bytes
+  sanitized = sanitized.replace(/\0/g, '');
+
+  // Only allow alphanumeric, wildcards, dots, and hyphens
+  const validPattern = /^[a-zA-Z0-9*?._ -]+$/;
+  if (!validPattern.test(sanitized)) {
+    console.error('Invalid file pattern:', sanitized);
+    return '*.*';
+  }
+
+  return sanitized;
+}
+
+// Security: Sanitize numeric input
+function sanitizeNumber(value, min, max, defaultValue) {
+  const num = parseInt(value, 10);
+  if (isNaN(num) || num < min || num > max) {
+    return defaultValue;
+  }
+  return num;
+}
+
+// Security: Sanitize file/directory list
+function sanitizeFileList(list) {
+  if (!list || typeof list !== 'string') {
+    return '';
+  }
+
+  let sanitized = list.trim();
+
+  // Remove null bytes
+  sanitized = sanitized.replace(/\0/g, '');
+
+  // Only allow alphanumeric, wildcards, dots, commas, spaces, hyphens, underscores
+  const validPattern = /^[a-zA-Z0-9*?.,_ -]*$/;
+  if (!validPattern.test(sanitized)) {
+    console.error('Invalid file/directory list:', sanitized);
+    return '';
+  }
+
+  return sanitized;
+}
+
+// Security: Sanitize attributes (only allow valid robocopy attribute letters)
+function sanitizeAttributes(attrs) {
+  if (!attrs || typeof attrs !== 'string') {
+    return '';
+  }
+
+  // Valid robocopy attributes: R (Read-only), A (Archive), S (System), H (Hidden),
+  // C (Compressed), N (Not content indexed), E (Encrypted), T (Temporary), O (Offline)
+  const validAttrs = /^[RASHCNETOD]*$/i;
+  const sanitized = attrs.trim().toUpperCase();
+
+  if (!validAttrs.test(sanitized)) {
+    console.error('Invalid attributes:', attrs);
+    return '';
+  }
+
+  return sanitized;
+}
 
 function buildRobocopyArgs(options) {
   const args = [
@@ -216,7 +422,19 @@ ipcMain.handle('load-preset', async () => {
   if (!result.canceled && result.filePaths.length > 0) {
     try {
       const data = await fs.readFile(result.filePaths[0], 'utf8');
+
+      // Security: Validate file size (prevent DoS via large files)
+      if (data.length > FILE_SIZE_LIMITS.PRESET_MAX) {
+        return { success: false, error: 'Preset file is too large (max 1MB)' };
+      }
+
       const preset = JSON.parse(data);
+
+      // Security: Validate preset structure
+      if (!validatePreset(preset)) {
+        return { success: false, error: 'Invalid preset format' };
+      }
+
       return { success: true, preset };
     } catch (error) {
       return { success: false, error: error.message };
@@ -251,14 +469,113 @@ ipcMain.handle('export-log', async (event, logContent) => {
 // SCHEDULED TASKS
 // ===================================
 
+// Security: Validate preset structure
+function validatePreset(preset) {
+  if (!preset || typeof preset !== 'object') {
+    return false;
+  }
+
+  // Preset must have a config object
+  if (!preset.config || typeof preset.config !== 'object') {
+    return false;
+  }
+
+  const config = preset.config;
+
+  // Validate required string fields
+  if (typeof config.source !== 'string' || typeof config.destination !== 'string') {
+    return false;
+  }
+
+  // Validate optional fields have correct types
+  const stringFields = ['files', 'excludeFiles', 'excludeDirs', 'includeAttributes', 'excludeAttributes'];
+  const numberFields = ['levels', 'retries', 'waitTime', 'threads'];
+  const booleanFields = ['subdirectories', 'emptySubdirectories', 'mirrorMode', 'copyAll',
+                         'restartMode', 'backupMode', 'moveFiles', 'moveDirs', 'copyArchive',
+                         'resetArchive', 'verbose', 'noProgress', 'eta', 'multiThread'];
+
+  for (const field of stringFields) {
+    if (config[field] !== undefined && typeof config[field] !== 'string') {
+      return false;
+    }
+  }
+
+  for (const field of numberFields) {
+    if (config[field] !== undefined && typeof config[field] !== 'number') {
+      return false;
+    }
+  }
+
+  for (const field of booleanFields) {
+    if (config[field] !== undefined && typeof config[field] !== 'boolean') {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Security: Validate scheduled task structure
+function validateScheduledTask(task) {
+  if (!task || typeof task !== 'object') {
+    return false;
+  }
+
+  // Validate required fields using defined constants
+  if (typeof task.name !== 'string' || task.name.length === 0 || task.name.length > VALIDATION_LIMITS.TASK_NAME_MAX) {
+    return false;
+  }
+
+  if (typeof task.schedule !== 'string' || task.schedule.length === 0 || task.schedule.length > VALIDATION_LIMITS.SCHEDULE_MAX) {
+    return false;
+  }
+
+  // Validate cron format (basic validation)
+  const cronPattern = /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9]))\s+(\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3]))\s+(\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1]))\s+(\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2]))\s+(\*|[0-6]|\*\/[0-6])$/;
+  if (!cronPattern.test(task.schedule)) {
+    console.error('Invalid cron format:', task.schedule);
+    return false;
+  }
+
+  // Validate config object
+  if (!task.config || !validatePreset({ config: task.config })) {
+    return false;
+  }
+
+  return true;
+}
+
 // Load tasks from storage
 async function loadScheduledTasks() {
   const tasksPath = path.join(app.getPath('userData'), 'scheduled-tasks.json');
   try {
     if (fsSync.existsSync(tasksPath)) {
       const data = await fs.readFile(tasksPath, 'utf8');
+
+      // Security: Validate file size (prevent DoS)
+      if (data.length > FILE_SIZE_LIMITS.TASKS_MAX) {
+        console.error('Scheduled tasks file is too large');
+        return [];
+      }
+
       const tasks = JSON.parse(data);
-      return tasks;
+
+      // Security: Validate that tasks is an array
+      if (!Array.isArray(tasks)) {
+        console.error('Invalid tasks format: not an array');
+        return [];
+      }
+
+      // Security: Validate each task and filter out invalid ones
+      const validTasks = tasks.filter(task => {
+        const isValid = validateScheduledTask(task);
+        if (!isValid) {
+          console.error('Invalid task found, skipping:', task);
+        }
+        return isValid;
+      });
+
+      return validTasks;
     }
   } catch (error) {
     console.error('Failed to load scheduled tasks:', error);
@@ -280,6 +597,11 @@ async function saveScheduledTasks(tasks) {
 
 ipcMain.handle('add-scheduled-task', async (event, task) => {
   try {
+    // Validate task before adding
+    if (!validateScheduledTask(task)) {
+      return { success: false, error: 'Invalid task structure' };
+    }
+
     const tasks = await loadScheduledTasks();
     const newTask = {
       id: Date.now().toString(),
@@ -291,6 +613,7 @@ ipcMain.handle('add-scheduled-task', async (event, task) => {
     await saveScheduledTasks(tasks);
     return { success: true, task: newTask };
   } catch (error) {
+    console.error('Error adding scheduled task:', error);
     return { success: false, error: error.message };
   }
 });

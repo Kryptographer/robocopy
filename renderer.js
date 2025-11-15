@@ -3,10 +3,15 @@
 // UI Logic and Event Handlers
 // ===================================
 
+// Performance: State management
 let startTime = null;
 let timerInterval = null;
 let outputLog = ''; // Store full output for export
 let currentProgress = 0;
+let lastProgressUpdate = 0; // Throttle progress updates
+let scheduledTasksCache = null; // Cache scheduled tasks
+let scheduledTasksCacheTime = 0; // Cache timestamp
+const CACHE_DURATION = 5000; // 5 seconds cache
 
 // ===================================
 // DOM ELEMENTS
@@ -340,6 +345,9 @@ function showError(message) {
 // ===================================
 
 function startTimer() {
+  // Performance: Clear any existing timer first to prevent leaks
+  stopTimer();
+
   startTime = Date.now();
   timerInterval = setInterval(updateTimer, 1000);
 }
@@ -349,10 +357,15 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+  // Performance: Reset start time when stopping
+  startTime = null;
 }
 
 function updateTimer() {
-  if (!startTime) return;
+  if (!startTime) {
+    stopTimer(); // Safety: stop if no start time
+    return;
+  }
 
   const elapsed = Math.floor((Date.now() - startTime) / 1000);
   const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
@@ -564,45 +577,102 @@ async function addScheduledTask() {
     appendOutput(`\n✓ Scheduled task "${taskName}" added successfully\n`, 'success');
     elements.taskName.value = '';
     elements.cronSchedule.value = '';
-    await loadScheduledTasks();
+
+    // Performance: Force refresh to invalidate cache
+    await loadScheduledTasks(true);
   } else {
     appendOutput(`\n✗ Failed to add task: ${result.error}\n`, 'error');
   }
 }
 
-async function loadScheduledTasks() {
+// Performance: Cache scheduled tasks to reduce IPC calls
+async function loadScheduledTasks(forceRefresh = false) {
+  const now = Date.now();
+
+  // Use cache if it's still valid and not forcing refresh
+  if (!forceRefresh && scheduledTasksCache && (now - scheduledTasksCacheTime) < CACHE_DURATION) {
+    displayScheduledTasks(scheduledTasksCache);
+    return;
+  }
+
+  // Fetch from main process
   const result = await window.electronAPI.getScheduledTasks();
   if (result.success) {
+    // Update cache
+    scheduledTasksCache = result.tasks;
+    scheduledTasksCacheTime = now;
     displayScheduledTasks(result.tasks);
   }
 }
 
+// Security: Escape HTML to prevent XSS
+function escapeHTML(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function displayScheduledTasks(tasks) {
-  elements.scheduledTasksList.innerHTML = '';
+  // Clear existing tasks
+  while (elements.scheduledTasksList.firstChild) {
+    elements.scheduledTasksList.removeChild(elements.scheduledTasksList.firstChild);
+  }
 
   if (tasks.length === 0) {
-    elements.scheduledTasksList.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-tertiary); font-size: 11px;">No scheduled tasks</div>';
+    const emptyMsg = document.createElement('div');
+    emptyMsg.style.padding = '12px';
+    emptyMsg.style.textAlign = 'center';
+    emptyMsg.style.color = 'var(--text-tertiary)';
+    emptyMsg.style.fontSize = '11px';
+    emptyMsg.textContent = 'No scheduled tasks';
+    elements.scheduledTasksList.appendChild(emptyMsg);
     return;
   }
 
   tasks.forEach(task => {
     const taskEl = document.createElement('div');
     taskEl.className = 'scheduled-task-item';
-    taskEl.innerHTML = `
-      <div class="task-info">
-        <div class="task-name">${task.name}</div>
-        <div class="task-schedule">Schedule: ${task.schedule}</div>
-        <span class="task-status ${task.status}">${task.status.toUpperCase()}</span>
-      </div>
-      <div class="task-actions">
-        <button class="btn btn-small" onclick="toggleTaskStatus('${task.id}')">
-          ${task.status === 'active' ? 'PAUSE' : 'RESUME'}
-        </button>
-        <button class="btn btn-small" onclick="deleteTask('${task.id}')">
-          DELETE
-        </button>
-      </div>
-    `;
+
+    // Security: Use DOM manipulation instead of innerHTML to prevent XSS
+    const taskInfo = document.createElement('div');
+    taskInfo.className = 'task-info';
+
+    const taskName = document.createElement('div');
+    taskName.className = 'task-name';
+    taskName.textContent = task.name; // Safe - uses textContent
+
+    const taskSchedule = document.createElement('div');
+    taskSchedule.className = 'task-schedule';
+    taskSchedule.textContent = `Schedule: ${task.schedule}`; // Safe - uses textContent
+
+    const taskStatus = document.createElement('span');
+    taskStatus.className = `task-status ${task.status}`;
+    taskStatus.textContent = task.status.toUpperCase(); // Safe - uses textContent
+
+    taskInfo.appendChild(taskName);
+    taskInfo.appendChild(taskSchedule);
+    taskInfo.appendChild(taskStatus);
+
+    // Create action buttons
+    const taskActions = document.createElement('div');
+    taskActions.className = 'task-actions';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'btn btn-small';
+    toggleBtn.textContent = task.status === 'active' ? 'PAUSE' : 'RESUME';
+    toggleBtn.addEventListener('click', () => toggleTaskStatus(task.id));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-small';
+    deleteBtn.textContent = 'DELETE';
+    deleteBtn.addEventListener('click', () => deleteTask(task.id));
+
+    taskActions.appendChild(toggleBtn);
+    taskActions.appendChild(deleteBtn);
+
+    taskEl.appendChild(taskInfo);
+    taskEl.appendChild(taskActions);
     elements.scheduledTasksList.appendChild(taskEl);
   });
 }
@@ -610,7 +680,8 @@ function displayScheduledTasks(tasks) {
 async function toggleTaskStatus(taskId) {
   const result = await window.electronAPI.toggleTaskStatus(taskId);
   if (result.success) {
-    await loadScheduledTasks();
+    // Performance: Force refresh to invalidate cache
+    await loadScheduledTasks(true);
   }
 }
 
@@ -619,19 +690,21 @@ async function deleteTask(taskId) {
     const result = await window.electronAPI.deleteScheduledTask(taskId);
     if (result.success) {
       appendOutput('\n✓ Task deleted successfully\n', 'success');
-      await loadScheduledTasks();
+
+      // Performance: Force refresh to invalidate cache
+      await loadScheduledTasks(true);
     }
   }
 }
 
-// Make functions globally accessible for inline onclick handlers
-window.toggleTaskStatus = toggleTaskStatus;
-window.deleteTask = deleteTask;
+// Security: Removed global window function assignments
+// Functions are now attached directly via addEventListener to prevent XSS
 
 // ===================================
 // PROGRESS ESTIMATION
 // ===================================
 
+// Performance: Throttle progress updates to avoid excessive DOM manipulation
 function parseProgress(output) {
   // Try to extract percentage from robocopy output
   // Robocopy shows progress like: "  10.0%"
@@ -639,6 +712,7 @@ function parseProgress(output) {
   if (percentMatch) {
     const percent = parseFloat(percentMatch[1]);
     updateProgress(percent);
+    return; // Early return to avoid redundant processing
   }
 
   // Look for file counts: "Files : 123" or "Copied: 45"
@@ -646,8 +720,8 @@ function parseProgress(output) {
   const copiedMatch = output.match(/Copied\s*:\s*(\d+)/i);
 
   if (filesMatch && copiedMatch) {
-    const total = parseInt(filesMatch[1]);
-    const copied = parseInt(copiedMatch[1]);
+    const total = parseInt(filesMatch[1], 10);
+    const copied = parseInt(copiedMatch[1], 10);
     if (total > 0) {
       const percent = (copied / total) * 100;
       updateProgress(percent);
@@ -655,11 +729,23 @@ function parseProgress(output) {
   }
 }
 
+// Performance: Throttle updates to max 10 updates per second (100ms)
 function updateProgress(percent) {
+  const now = Date.now();
+
+  // Throttle: Only update if 100ms has passed since last update
+  if (now - lastProgressUpdate < 100 && percent < 100) {
+    return;
+  }
+
+  lastProgressUpdate = now;
   currentProgress = Math.min(100, Math.max(0, percent));
+
+  // Performance: Batch DOM updates
+  const roundedProgress = Math.round(currentProgress);
   elements.progressFill.style.width = `${currentProgress}%`;
-  elements.statProgress.textContent = `${Math.round(currentProgress)}%`;
-  elements.progressText.textContent = `Progress: ${Math.round(currentProgress)}% complete`;
+  elements.statProgress.textContent = `${roundedProgress}%`;
+  elements.progressText.textContent = `Progress: ${roundedProgress}% complete`;
 }
 
 // ===================================

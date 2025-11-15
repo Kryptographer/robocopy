@@ -11,8 +11,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^27.0.0",
-    "electron-builder": "^24.6.4"
+    "electron": "^39.2.0",
+    "electron-builder": "^25.1.8"
   },
   "build": {
     "appId": "com.robocopy.gui",
