@@ -5,6 +5,9 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Performance: Store listener references for cleanup
+const listeners = new Map();
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -13,8 +16,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Robocopy execution
   executeRobocopy: (options) => ipcRenderer.invoke('execute-robocopy', options),
+
+  // Performance: Properly manage event listeners to prevent memory leaks
   onRobocopyOutput: (callback) => {
-    ipcRenderer.on('robocopy-output', (event, output) => callback(output));
+    const listener = (event, output) => callback(output);
+    ipcRenderer.on('robocopy-output', listener);
+    listeners.set('robocopy-output', listener);
+  },
+
+  // Performance: Allow cleanup of event listeners
+  removeRobocopyOutputListener: () => {
+    const listener = listeners.get('robocopy-output');
+    if (listener) {
+      ipcRenderer.removeListener('robocopy-output', listener);
+      listeners.delete('robocopy-output');
+    }
   },
 
   // Preset management
