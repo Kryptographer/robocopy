@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json.schemastore.org/electron-builder",
+  "appId": "com.robocopy.gui",
+  "productName": "Robocopy GUI",
+  "copyright": "Copyright © 2025",
+  "asar": true,
+  "asarUnpack": [
+    "node_modules/robocopy-gui/**/*"
+  ],
+  "compression": "maximum",
+  "removePackageScripts": true,
+  "npmRebuild": false,
+  "nodeGypRebuild": false,
+  "buildDependenciesFromSource": false,
+  "electronVersion": "34.0.0",
+  "files": [
+    "**/*",
+    "!**/*.{md,map}",
+    "!*.log",
+    "!.github",
+    "!docs",
+    "!test",
+    "!coverage",
+    "!.git",
+    "!.vscode",
+    "!.idea"
+  ],
+  "directories": {
+    "buildResources": "build",
+    "output": "dist"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "ia32", "arm64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64", "ia32"]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "verifyUpdateCodeSignature": false,
+    "signingHashAlgorithms": ["sha256"],
+    "publisherName": "Robocopy GUI",
+    "requestedExecutionLevel": "asInvoker",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "certificateFile": null,
+    "certificatePassword": null
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowElevation": true,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "build/icon.ico",
+    "uninstallerIcon": "build/icon.ico",
+    "installerHeaderIcon": "build/icon.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Robocopy GUI",
+    "include": null,
+    "script": null,
+    "deleteAppDataOnUninstall": false,
+    "runAfterFinish": true,
+    "menuCategory": false,
+    "warningsAsErrors": false,
+    "perMachine": false,
+    "unicode": true,
+    "guid": "a8b3c4d5-e6f7-4a5b-9c8d-7e6f5a4b3c2d",
+    "differentialPackage": true
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-portable.${ext}",
+    "requestExecutionLevel": "user"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "Kryptographer",
+      "repo": "robocopy",
+      "releaseType": "release",
+      "publishAutoUpdate": true
+    }
+  ],
+  "extraResources": [
+    {
+      "from": "resources/",
+      "to": "resources/",
+      "filter": ["**/*"]
+    }
+  ],
+  "protocols": [
+    {
+      "name": "Robocopy GUI Protocol",
+      "schemes": ["robocopy-gui"]
+    }
+  ],
+  "fileAssociations": [
+    {
+      "ext": "rcp",
+      "name": "Robocopy Preset",
+      "description": "Robocopy GUI Preset File",
+      "icon": "build/icon.ico",
+      "role": "Editor"
+    }
+  ]
+}

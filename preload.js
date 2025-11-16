@@ -47,7 +47,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleTaskStatus: (taskId) => ipcRenderer.invoke('toggle-task-status', taskId),
 
   // Path validation
-  validatePath: (path) => ipcRenderer.invoke('validate-path', path)
+  validatePath: (path) => ipcRenderer.invoke('validate-path', path),
+
+  // Auto-updater (New in v2.0)
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+
+  onUpdateAvailable: (callback) => {
+    const listener = (event, info) => callback(info);
+    ipcRenderer.on('update-available', listener);
+    listeners.set('update-available', listener);
+  },
+
+  onDownloadProgress: (callback) => {
+    const listener = (event, progress) => callback(progress);
+    ipcRenderer.on('download-progress', listener);
+    listeners.set('download-progress', listener);
+  },
+
+  onUpdateDownloaded: (callback) => {
+    const listener = (event, info) => callback(info);
+    ipcRenderer.on('update-downloaded', listener);
+    listeners.set('update-downloaded', listener);
+  },
+
+  // Performance monitoring (New in v2.0)
+  getPerformanceMetrics: () => ipcRenderer.invoke('get-performance-metrics'),
+  forceGarbageCollection: () => ipcRenderer.invoke('force-gc')
 });
 
-console.log('⚡ Preload script loaded');
+console.log('⚡ Preload script loaded - Robocopy GUI v2.0');

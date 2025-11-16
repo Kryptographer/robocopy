@@ -3,6 +3,44 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
+
+// ===================================
+// LOGGING & PERFORMANCE MONITORING
+// ===================================
+log.transports.file.level = 'info';
+log.transports.console.level = 'debug';
+autoUpdater.logger = log;
+
+// Performance monitoring - Track app metrics
+const performanceMetrics = {
+  startTime: Date.now(),
+  windowCreationTime: 0,
+  memoryUsage: () => {
+    const usage = process.memoryUsage();
+    return {
+      rss: (usage.rss / 1024 / 1024).toFixed(2) + ' MB',
+      heapUsed: (usage.heapUsed / 1024 / 1024).toFixed(2) + ' MB',
+      heapTotal: (usage.heapTotal / 1024 / 1024).toFixed(2) + ' MB',
+      external: (usage.external / 1024 / 1024).toFixed(2) + ' MB'
+    };
+  }
+};
+
+// Log memory usage periodically (every 5 minutes)
+setInterval(() => {
+  log.info('Memory usage:', performanceMetrics.memoryUsage());
+}, 5 * 60 * 1000);
+
+// V8 optimization hints - Enable performance features
+if (app.commandLine) {
+  app.commandLine.appendSwitch('enable-features', 'VaapiVideoDecoder,VaapiVideoEncoder');
+  app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096 --optimize-for-size');
+  app.commandLine.appendSwitch('disable-renderer-backgrounding'); // Keep renderer active
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+}
 
 // ===================================
 // CONSTANTS
@@ -37,8 +75,51 @@ const VALIDATION_LIMITS = {
 let mainWindow;
 let scheduledTasks = new Map(); // Store scheduled tasks
 
+// ===================================
+// AUTO UPDATER CONFIGURATION
+// ===================================
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+// Auto-updater event handlers
+autoUpdater.on('checking-for-update', () => {
+  log.info('Checking for updates...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  log.info('Update available:', info.version);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-available', info);
+  }
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  log.info('Update not available:', info.version);
+});
+
+autoUpdater.on('error', (err) => {
+  log.error('Error in auto-updater:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  const message = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`;
+  log.info(message);
+  if (mainWindow) {
+    mainWindow.webContents.send('download-progress', progressObj);
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  log.info('Update downloaded:', info.version);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded', info);
+  }
+});
+
 function createWindow() {
   try {
+    const windowStart = Date.now();
+
     mainWindow = new BrowserWindow({
       width: WINDOW_DEFAULTS.WIDTH,
       height: WINDOW_DEFAULTS.HEIGHT,
@@ -55,21 +136,69 @@ function createWindow() {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        preload: path.join(__dirname, 'preload.js')
-      }
+        preload: path.join(__dirname, 'preload.js'),
+        // Performance optimizations
+        enableWebSQL: false,
+        spellcheck: false,
+        // Security hardening
+        sandbox: true,
+        webSecurity: true,
+        allowRunningInsecureContent: false,
+        experimentalFeatures: false
+      },
+      // Performance: Show window when ready
+      show: false
+    });
+
+    // Performance: Show window once ready to prevent flickering
+    mainWindow.once('ready-to-show', () => {
+      mainWindow.show();
+      performanceMetrics.windowCreationTime = Date.now() - windowStart;
+      log.info(`Window created in ${performanceMetrics.windowCreationTime}ms`);
     });
 
     mainWindow.loadFile('index.html');
 
+    // Check for updates after window is ready (if not in development)
+    mainWindow.webContents.on('did-finish-load', () => {
+      if (!app.isPackaged) {
+        log.info('Running in development mode - skipping update check');
+      } else {
+        setTimeout(() => {
+          autoUpdater.checkForUpdates().catch(err => {
+            log.error('Failed to check for updates:', err);
+          });
+        }, 3000); // Delay to not interfere with startup
+      }
+    });
+
     // Open DevTools in development
-    // mainWindow.webContents.openDevTools();
+    if (process.argv.includes('--dev') || !app.isPackaged) {
+      mainWindow.webContents.openDevTools();
+    }
+
+    // Memory optimization: Clear cache on window close
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+      if (global.gc) {
+        global.gc(); // Manual GC if exposed
+      }
+    });
+
   } catch (error) {
-    console.error('Failed to create window:', error);
+    log.error('Failed to create window:', error);
     app.quit();
   }
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  log.info('Application ready');
+  log.info('Platform:', process.platform);
+  log.info('Electron version:', process.versions.electron);
+  log.info('Node version:', process.versions.node);
+  log.info('Chrome version:', process.versions.chrome);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -80,6 +209,14 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  }
+});
+
+// Optimize memory on app quit
+app.on('before-quit', () => {
+  log.info('Application quitting - Final memory usage:', performanceMetrics.memoryUsage());
+  if (global.gc) {
+    global.gc();
   }
 });
 
@@ -675,5 +812,94 @@ ipcMain.handle('validate-path', async (event, pathToValidate) => {
       isNetworkPath: pathToValidate.startsWith('\\\\') || pathToValidate.startsWith('//'),
       error: error.message
     };
+  }
+});
+
+// ===================================
+// AUTO-UPDATER IPC HANDLERS
+// ===================================
+
+ipcMain.handle('check-for-updates', async () => {
+  try {
+    if (!app.isPackaged) {
+      return {
+        success: false,
+        error: 'Update checking is only available in packaged app'
+      };
+    }
+    const result = await autoUpdater.checkForUpdates();
+    return { success: true, updateInfo: result?.updateInfo };
+  } catch (error) {
+    log.error('Error checking for updates:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('download-update', async () => {
+  try {
+    if (!app.isPackaged) {
+      return {
+        success: false,
+        error: 'Update downloading is only available in packaged app'
+      };
+    }
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (error) {
+    log.error('Error downloading update:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('install-update', async () => {
+  try {
+    // Quit and install the update
+    autoUpdater.quitAndInstall(false, true);
+    return { success: true };
+  } catch (error) {
+    log.error('Error installing update:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ===================================
+// PERFORMANCE MONITORING IPC HANDLERS
+// ===================================
+
+ipcMain.handle('get-performance-metrics', async () => {
+  try {
+    const metrics = {
+      appUptime: Math.floor((Date.now() - performanceMetrics.startTime) / 1000),
+      windowCreationTime: performanceMetrics.windowCreationTime,
+      memory: performanceMetrics.memoryUsage(),
+      platform: process.platform,
+      arch: process.arch,
+      version: app.getVersion(),
+      electronVersion: process.versions.electron,
+      nodeVersion: process.versions.node,
+      chromeVersion: process.versions.chrome
+    };
+    return { success: true, metrics };
+  } catch (error) {
+    log.error('Error getting performance metrics:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('force-gc', async () => {
+  try {
+    if (global.gc) {
+      global.gc();
+      const memoryAfter = performanceMetrics.memoryUsage();
+      log.info('Forced garbage collection - Memory after GC:', memoryAfter);
+      return { success: true, memory: memoryAfter };
+    }
+    return {
+      success: false,
+      error: 'GC not exposed. Run with --expose-gc flag'
+    };
+  } catch (error) {
+    log.error('Error forcing GC:', error);
+    return { success: false, error: error.message };
   }
 });
