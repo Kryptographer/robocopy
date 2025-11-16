@@ -3,15 +3,36 @@ node_modules/
 
 # Build outputs
 dist/
-build/
 out/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.msi
+*.nupkg
+
+# Build resources (keep directory, ignore built icons)
+build/*.ico
+build/*.icns
+build/*.png
 
 # Electron
 *.log
+*.log.*
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+*.spec.js.snap
 
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # IDE
 .vscode/
@@ -19,12 +40,31 @@ Thumbs.db
 *.swp
 *.swo
 *~
+*.sublime-*
 
 # Environment
 .env
 .env.local
+.env.production
 
 # Package manager
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# TypeScript (future)
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Certificates (security)
+*.pfx
+*.p12
+*.pem
+*.key
+certificates/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.parcel-cache/

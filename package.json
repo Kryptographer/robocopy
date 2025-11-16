@@ -1,25 +1,107 @@
 {
   "name": "robocopy-gui",
-  "version": "1.0.0",
-  "description": "Ultimate Robocopy GUI with modern dark mode design",
+  "version": "2.0.0",
+  "description": "Ultimate Robocopy GUI with modern dark mode design - Latest tech stack with advanced optimizations",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "dev": "electron . --dev",
+    "build": "electron-builder --config electron-builder.json",
+    "build:win": "electron-builder --win --x64 --ia32",
+    "build:dir": "electron-builder --dir",
+    "test": "jest",
+    "test:e2e": "playwright test",
+    "lint": "eslint . --ext .js",
+    "postinstall": "electron-builder install-app-deps"
   },
-  "keywords": ["robocopy", "gui", "electron", "backup", "file-copy"],
+  "keywords": ["robocopy", "gui", "electron", "backup", "file-copy", "windows", "modern", "performance", "security"],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "electron-log": "^5.2.4"
+  },
   "devDependencies": {
-    "electron": "^39.2.0",
-    "electron-builder": "^25.1.8"
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.17.0",
+    "@eslint/js": "^9.17.0",
+    "jest": "^29.7.0",
+    "@playwright/test": "^1.49.1"
   },
   "build": {
     "appId": "com.robocopy.gui",
     "productName": "Robocopy GUI",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/robocopy-gui/**/*"
+    ],
+    "compression": "maximum",
+    "electronVersion": "34.0.0",
+    "files": [
+      "**/*",
+      "!**/*.md",
+      "!*.log",
+      "!.github",
+      "!docs"
+    ],
     "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
-    }
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "verifyUpdateCodeSignature": false,
+      "sign": "./build/sign.js",
+      "signingHashAlgorithms": ["sha256"],
+      "publisherName": "Robocopy GUI",
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Robocopy GUI",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "license": "LICENSE",
+      "warningsAsErrors": false
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/",
+        "filter": ["**/*"]
+      }
+    ]
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "*.js",
+      "!node_modules/**"
+    ]
   }
 }
