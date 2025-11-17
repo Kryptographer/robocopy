@@ -11,91 +11,36 @@ Before building, ensure you have:
 - **Windows Operating System** (for portable .exe builds)
 - **Application Icon** - Place `icon.ico` in the `build/` directory (see [build/README-ICON.md](build/README-ICON.md))
 
-## Build Scripts Overview
+## Automated Build Script (Windows)
 
-This project provides three build scripts with different levels of detail and verification:
+This project provides a simple, automated build script for Windows:
 
-### 1. Comprehensive Build with Verification (Recommended)
+### Build Script
 
-**Script:** `build-and-verify.bat`
+**Script:** `build.bat`
 
-The most thorough build option with complete verification and reporting.
-
-```batch
-build-and-verify.bat
-```
-
-**This script performs:**
-1. ✓ Prerequisites and file existence checks
-2. ✓ Clean previous builds (complete fresh install)
-3. ✓ Install all dependencies
-4. ✓ Run code linting
-5. ✓ Run unit tests
-6. ✓ Build portable application
-7. ✓ Verify build output and artifacts
-8. ✓ Generate comprehensive verification report
-
-**Output:**
-- Portable executables in `portable/` folder
-- All build artifacts in `dist/` folder
-- Build log in `build-verification-log.txt`
-- Error log in `build-errors.txt`
-- Verification report in `build-verification-report.txt`
-
-**Use this when:**
-- Building for production/release
-- Need to verify everything is working 100%
-- Want detailed reports and error tracking
-- Need to ensure code quality (tests + linting)
-
-### 2. Detailed Build with Logging
-
-**Script:** `build-portable.bat`
-
-Standard build with detailed logging and checks.
+A streamlined build script that handles everything from dependency installation to portable executable creation.
 
 ```batch
-build-portable.bat
+build.bat
 ```
 
 **This script performs:**
 1. ✓ Prerequisites check (Node.js, npm versions)
-2. ✓ Clean previous builds
+2. ✓ Clean previous builds (dist and portable folders)
 3. ✓ Install all dependencies
-4. ✓ Run code linting
-5. ✓ Build portable application
-6. ✓ Organize output files
+4. ✓ Build portable application
+5. ✓ Organize portable files in `portable/` folder
+6. ✓ Automatically open the portable folder when complete
 
 **Output:**
 - Portable executables in `portable/` folder
 - All build artifacts in `dist/` folder
-- Build log in `build-log.txt`
 
-**Use this when:**
-- Need detailed build information
-- Want to see the build process step-by-step
-- Building for testing or development
-
-### 3. Quick Build
-
-**Script:** `build-quick.bat`
-
-For a quick build with minimal console output.
-
-```batch
-build-quick.bat
-```
-
-**This script will:**
-- Clean previous builds
-- Install dependencies
-- Build the portable application
-- Place the result in the `portable` folder
-
-**Use this when:**
-- Need fast iteration during development
-- Already verified prerequisites
-- Don't need detailed logs
+**How to use:**
+- Simply double-click `build.bat` and wait for the build to complete
+- The script will show clear progress messages for each step
+- When finished, the `portable` folder will open automatically
 
 ## Manual Build
 
