@@ -7,6 +7,9 @@ REM ============================================================================
 
 setlocal enabledelayedexpansion
 
+REM Change to the directory where this script is located
+cd /d "%~dp0"
+
 echo.
 echo ============================================================================
 echo  Robocopy GUI - Portable Build Script
