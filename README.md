@@ -50,10 +50,45 @@ npm start
 
 ### Building
 
+#### Quick Build (Manual)
+
 ```bash
 # Build the application
 npm run build
 ```
+
+#### Automated Build Scripts (Windows)
+
+For a complete, verified build process on Windows:
+
+1. **Comprehensive Build with Verification** (Recommended)
+   ```batch
+   build-and-verify.bat
+   ```
+   - Checks all prerequisites
+   - Runs tests and linting
+   - Builds the portable application
+   - Verifies all outputs
+   - Generates detailed reports
+
+2. **Detailed Build with Logging**
+   ```batch
+   build-portable.bat
+   ```
+   - Full build process with detailed console output
+   - Prerequisite checks
+   - Comprehensive logging
+   - Portable executable creation
+
+3. **Quick Build**
+   ```batch
+   build-quick.bat
+   ```
+   - Minimal output
+   - Fast build process
+   - Best for rapid testing
+
+See [BUILD.md](BUILD.md) for detailed build instructions.
 
 ## 📖 Usage
 
