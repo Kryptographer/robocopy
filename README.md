@@ -57,38 +57,23 @@ npm start
 npm run build
 ```
 
-#### Automated Build Scripts (Windows)
+#### Automated Build Script (Windows)
 
-For a complete, verified build process on Windows:
+For Windows users, use the automated build script:
 
-1. **Comprehensive Build with Verification** (Recommended)
-   ```batch
-   build-and-verify.bat
-   ```
-   - Checks all prerequisites
-   - Runs tests and linting
-   - Builds the portable application
-   - Verifies all outputs
-   - Generates detailed reports
+```batch
+build.bat
+```
 
-2. **Detailed Build with Logging**
-   ```batch
-   build-portable.bat
-   ```
-   - Full build process with detailed console output
-   - Prerequisite checks
-   - Comprehensive logging
-   - Portable executable creation
+This script will:
+- Check prerequisites (Node.js, npm)
+- Clean previous builds
+- Install all dependencies
+- Build the portable executable
+- Organize files in the `portable` folder
+- Automatically open the portable folder when complete
 
-3. **Quick Build**
-   ```batch
-   build-quick.bat
-   ```
-   - Minimal output
-   - Fast build process
-   - Best for rapid testing
-
-See [BUILD.md](BUILD.md) for detailed build instructions.
+Simply double-click `build.bat` and wait for the build to complete!
 
 ## 📖 Usage
 
