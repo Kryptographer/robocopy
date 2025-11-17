@@ -17,6 +17,10 @@
   "keywords": ["robocopy", "gui", "electron", "backup", "file-copy", "windows", "modern", "performance", "security"],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kryptographer/robocopy.git"
+  },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
@@ -61,7 +65,6 @@
         }
       ],
       "verifyUpdateCodeSignature": false,
-      "sign": "./build/sign.js",
       "signingHashAlgorithms": ["sha256"],
       "publisherName": "Robocopy GUI",
       "requestedExecutionLevel": "asInvoker",
@@ -80,10 +83,6 @@
     },
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"
-    },
-    "publish": {
-      "provider": "github",
-      "releaseType": "release"
     },
     "extraResources": [
       {
