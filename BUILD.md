@@ -9,30 +9,56 @@ Before building, ensure you have:
 - **Node.js** version 20.0.0 or higher ([Download](https://nodejs.org/))
 - **npm** version 10.0.0 or higher (included with Node.js)
 - **Windows Operating System** (for portable .exe builds)
+- **Application Icon** - Place `icon.ico` in the `build/` directory (see [build/README-ICON.md](build/README-ICON.md))
 
-## Quick Build
+## Build Scripts Overview
 
-For a quick build with minimal console output:
+This project provides three build scripts with different levels of detail and verification:
+
+### 1. Comprehensive Build with Verification (Recommended)
+
+**Script:** `build-and-verify.bat`
+
+The most thorough build option with complete verification and reporting.
 
 ```batch
-build-quick.bat
+build-and-verify.bat
 ```
 
-This script will:
-- Clean previous builds
-- Install dependencies
-- Build the portable application
-- Place the result in the `portable` folder
+**This script performs:**
+1. ✓ Prerequisites and file existence checks
+2. ✓ Clean previous builds (complete fresh install)
+3. ✓ Install all dependencies
+4. ✓ Run code linting
+5. ✓ Run unit tests
+6. ✓ Build portable application
+7. ✓ Verify build output and artifacts
+8. ✓ Generate comprehensive verification report
 
-## Detailed Build
+**Output:**
+- Portable executables in `portable/` folder
+- All build artifacts in `dist/` folder
+- Build log in `build-verification-log.txt`
+- Error log in `build-errors.txt`
+- Verification report in `build-verification-report.txt`
 
-For a detailed build with full logging and error reporting:
+**Use this when:**
+- Building for production/release
+- Need to verify everything is working 100%
+- Want detailed reports and error tracking
+- Need to ensure code quality (tests + linting)
+
+### 2. Detailed Build with Logging
+
+**Script:** `build-portable.bat`
+
+Standard build with detailed logging and checks.
 
 ```batch
 build-portable.bat
 ```
 
-This script performs:
+**This script performs:**
 1. ✓ Prerequisites check (Node.js, npm versions)
 2. ✓ Clean previous builds
 3. ✓ Install all dependencies
@@ -44,6 +70,32 @@ This script performs:
 - Portable executables in `portable/` folder
 - All build artifacts in `dist/` folder
 - Build log in `build-log.txt`
+
+**Use this when:**
+- Need detailed build information
+- Want to see the build process step-by-step
+- Building for testing or development
+
+### 3. Quick Build
+
+**Script:** `build-quick.bat`
+
+For a quick build with minimal console output.
+
+```batch
+build-quick.bat
+```
+
+**This script will:**
+- Clean previous builds
+- Install dependencies
+- Build the portable application
+- Place the result in the `portable` folder
+
+**Use this when:**
+- Need fast iteration during development
+- Already verified prerequisites
+- Don't need detailed logs
 
 ## Manual Build
 
