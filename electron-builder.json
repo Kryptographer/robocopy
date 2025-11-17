@@ -44,7 +44,6 @@
         "arch": ["x64", "ia32"]
       }
     ],
-    "icon": "build/icon.ico",
     "verifyUpdateCodeSignature": false,
     "signingHashAlgorithms": ["sha256"],
     "publisherName": "Robocopy GUI",
@@ -57,9 +56,6 @@
     "oneClick": false,
     "allowElevation": true,
     "allowToChangeInstallationDirectory": true,
-    "installerIcon": "build/icon.ico",
-    "uninstallerIcon": "build/icon.ico",
-    "installerHeaderIcon": "build/icon.ico",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "Robocopy GUI",
@@ -105,7 +101,6 @@
       "ext": "rcp",
       "name": "Robocopy Preset",
       "description": "Robocopy GUI Preset File",
-      "icon": "build/icon.ico",
       "role": "Editor"
     }
   ]
